@@ -137,7 +137,7 @@ object AdverStat_9 {
             val top3Array = new ArrayBuffer[AdProvinceTop3]()
             for(item <- items){
               val date = item.getAs[String]("date")
-              val province = item.getAs[String]("province")
+              val province = item.getAs[String]("   province")
               val adid = item.getAs[Long]("adid")
               val count = item.getAs[Long]("count")
 
