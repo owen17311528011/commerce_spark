@@ -1,0 +1,46 @@
+import org.apache.spark.util.AccumulatorV2
+
+import scala.collection.mutable
+
+//自定义累加器，内部维护一个哈希map结构累加
+class SessionStatAccumulator extends AccumulatorV2[String, mutable.HashMap[String, Int]]{
+
+  val countMap = new mutable.HashMap[String, Int]()
+
+  override def isZero: Boolean = {
+    countMap.isEmpty
+  }
+
+  override def copy(): AccumulatorV2[String, mutable.HashMap[String, Int]] = {
+    val acc = new SessionStatAccumulator
+    acc.countMap ++= this.countMap
+    acc
+  }
+
+  override def reset(): Unit = {
+    countMap.clear()
+  }
+
+  override def add(v: String): Unit = {
+    if(!this.countMap.contains(v))
+      this.countMap += (v -> 0)
+    this.countMap.update(v, countMap(v) + 1)
+  }
+
+  //连个累加器合并
+  override def merge(other: AccumulatorV2[String, mutable.HashMap[String, Int]]): Unit = {
+    other match {
+        // (0 /: (1 to 100))(_+_)折叠操作
+        // (0 /: (1 to 100)){case (int1, ！) => int1 + int2}
+        // (1 /: 100).foldLeft(0)
+        // (this.countMap /: acc.countMap)
+      case acc:SessionStatAccumulator => acc.countMap.foldLeft(this.countMap){
+        case (map, (k,v)) => map += (k -> (map.getOrElse(k, 0) + v))
+      }
+    }
+  }
+
+  override def value: mutable.HashMap[String, Int] = {
+    this.countMap
+  }
+}
